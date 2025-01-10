@@ -58,10 +58,13 @@
             width: 100%;
             height: calc(100% - 50px);
             overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .pdf-viewer iframe {
+        .pdf-viewer canvas {
             width: 100%;
-            height: 100%;
+            height: auto;
             border: none;
         }
     </style>
@@ -74,50 +77,86 @@
             <button id="nextPage">Next</button>
         </div>
         <div class="pdf-viewer">
-            <iframe id="pdfIframe" src="thakur.pdf"></iframe>
+            <canvas id="pdfCanvas"></canvas>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <script>
-        const pdfIframe = document.getElementById('pdfIframe');
-        const prevPageButton = document.getElementById('prevPage');
-        const nextPageButton = document.getElementById('nextPage');
-        const pageNumberInput = document.getElementById('pageNumber');
-        const pageCountSpan = document.getElementById('pageCount');
+        const url = 'thakur.pdf';
 
-        let currentPage = 1;
-        let totalPages = 1;
+        let pdfDoc = null,
+            pageNum = 1,
+            pageRendering = false,
+            pageNumPending = null,
+            scale = 1.5,
+            canvas = document.getElementById('pdfCanvas'),
+            ctx = canvas.getContext('2d');
 
-        // Remove the PDF.js specific code and use a simpler approach
-        prevPageButton.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                pageNumberInput.value = currentPage;
-                pdfIframe.src = `thakur.pdf#page=${currentPage}`;
-            }
+        pdfjsLib.getDocument(url).promise.then((pdfDoc_) => {
+            pdfDoc = pdfDoc_;
+            document.getElementById('pageCount').textContent = pdfDoc.numPages;
+            renderPage(pageNum);
         });
 
-        nextPageButton.addEventListener('click', () => {
-            if (currentPage < totalPages) {
-                currentPage++;
-                pageNumberInput.value = currentPage;
-                pdfIframe.src = `thakur.pdf#page=${currentPage}`;
-            }
-        });
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then((page) => {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
 
-        pageNumberInput.addEventListener('change', () => {
-            const pageNumber = parseInt(pageNumberInput.value);
-            if (pageNumber >= 1 && pageNumber <= totalPages) {
-                currentPage = pageNumber;
-                pdfIframe.src = `thakur.pdf#page=${currentPage}`;
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport,
+                };
+                const renderTask = page.render(renderContext);
+
+                renderTask.promise.then(() => {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+
+            document.getElementById('pageNumber').value = num;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
             } else {
-                pageNumberInput.value = currentPage;
+                renderPage(num);
             }
+        }
+
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (pageNum <= 1) {
+                return;
+            }
+            pageNum--;
+            queueRenderPage(pageNum);
         });
 
-        // Set totalPages to a reasonable default value
-        totalPages = 100; // Adjust this value based on your PDF
-        pageCountSpan.textContent = totalPages;
+        document.getElementById('nextPage').addEventListener('click', () => {
+            if (pageNum >= pdfDoc.numPages) {
+                return;
+            }
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('pageNumber').addEventListener('change', (e) => {
+            const num = parseInt(e.target.value);
+            if (num >= 1 && num <= pdfDoc.numPages) {
+                pageNum = num;
+                queueRenderPage(pageNum);
+            } else {
+                e.target.value = pageNum;
+            }
+        });
     </script>
 </body>
 </html>
