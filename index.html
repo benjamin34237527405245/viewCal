@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .pdf-container {
+            width: 90%;
+            height: 90%;
+            background-color: #1e1e1e;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .pdf-toolbar {
+            background-color: #333333;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pdf-toolbar button {
+            background-color: #444444;
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .pdf-toolbar button:hover {
+            background-color: #555555;
+        }
+        .pdf-toolbar input {
+            width: 50px;
+            text-align: center;
+            border: none;
+            border-radius: 5px;
+            padding: 5px;
+            background-color: #444444;
+            color: #ffffff;
+        }
+        .pdf-viewer {
+            width: 100%;
+            height: calc(100% - 50px);
+            overflow: auto;
+        }
+        .pdf-viewer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-container">
+        <div class="pdf-toolbar">
+            <button id="prevPage">Previous</button>
+            <span>Page <input type="number" id="pageNumber" value="1"> of <span id="pageCount">1</span></span>
+            <button id="nextPage">Next</button>
+        </div>
+        <div class="pdf-viewer">
+            <iframe id="pdfIframe" src="thakur.pdf"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const pdfIframe = document.getElementById('pdfIframe');
+        const prevPageButton = document.getElementById('prevPage');
+        const nextPageButton = document.getElementById('nextPage');
+        const pageNumberInput = document.getElementById('pageNumber');
+        const pageCountSpan = document.getElementById('pageCount');
+
+        let currentPage = 1;
+        let totalPages = 1;
+
+        // Remove the PDF.js specific code and use a simpler approach
+        prevPageButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                pageNumberInput.value = currentPage;
+                pdfIframe.src = `thakur.pdf#page=${currentPage}`;
+            }
+        });
+
+        nextPageButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                pageNumberInput.value = currentPage;
+                pdfIframe.src = `thakur.pdf#page=${currentPage}`;
+            }
+        });
+
+        pageNumberInput.addEventListener('change', () => {
+            const pageNumber = parseInt(pageNumberInput.value);
+            if (pageNumber >= 1 && pageNumber <= totalPages) {
+                currentPage = pageNumber;
+                pdfIframe.src = `thakur.pdf#page=${currentPage}`;
+            } else {
+                pageNumberInput.value = currentPage;
+            }
+        });
+
+        // Set totalPages to a reasonable default value
+        totalPages = 100; // Adjust this value based on your PDF
+        pageCountSpan.textContent = totalPages;
+    </script>
+</body>
+</html>
